@@ -159,7 +159,8 @@
             prefix = "C-a";
             terminal = "tmux-256color";
             extraConfig = ''
-              set -g allow-passthrough on
+              set -g allow-passthrough all
+              set -g set-titles on
               set -g set-clipboard on
               set -g update-environment "SSH_AUTH_SOCK SSH_CONNECTION DISPLAY"
               bind-key -T copy-mode-vi WheelUpPane send-keys -X scroll-up

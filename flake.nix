@@ -26,8 +26,14 @@
 
           programs.home-manager.enable = true;
 
+          programs.git = {
+            enable = true;
+            settings = {
+              core.sshCommand = "/usr/bin/ssh";
+            };
+          };
+
           home.packages = with pkgs; [
-            git
             curl
             jq
             claude-code

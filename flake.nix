@@ -114,7 +114,7 @@
 
               export GITHUB_TOKEN=$(cat /etc/coder/ghtoken)
               export PATH="/opt/qumulo/toolchain/bin:''${PATH}"
-              export SSH_AUTH_SOCK=$XDG_RUNTIME_DIR/ssh-agent.socket
+
 
               # Configure vscode/cursor as hg merge tool
               code_latest_version=$(ls ''${HOME}/.vscode-server/bin/ | sort -V | tail -n 1)
@@ -155,6 +155,7 @@
             extraConfig = ''
               set -g allow-passthrough on
               set -g set-clipboard on
+              set -g update-environment "SSH_AUTH_SOCK SSH_CONNECTION DISPLAY"
               bind-key -T copy-mode-vi WheelUpPane send-keys -X scroll-up
               bind-key -T copy-mode-vi WheelDownPane send-keys -X scroll-down
             '';

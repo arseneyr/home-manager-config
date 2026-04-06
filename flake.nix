@@ -33,10 +33,25 @@
             };
           };
 
+          programs.claude-code = {
+            enable = true;
+            package = pkgs.claude-code;
+            settings = {
+              model = "opus[1m]";
+              effortLevel = "high";
+            };
+            mcpServers = {
+              nixos = {
+                type = "stdio";
+                command = "nix";
+                args = ["run" "github:utensils/mcp-nixos"];
+              };
+            };
+          };
+
           home.packages = with pkgs; [
             curl
             jq
-            claude-code
             delta
             ghostty.terminfo
             ghostty.shell_integration
@@ -68,7 +83,7 @@
               # srcrun aliases
               qqi = "srcrun simnode/qq_internal --dir build/tmp/cluster";
               s3 = "srcrun simnode/s3.py";
-              cr = "srcrun ./check_run.py -b -c --auto-remote-test-execution";
+              cr = "srcrun ./check_run.py -b -c";
               lint = "srcrun lint/all -ac";
               qc = "srcrun simnode/qc";
               b = "srcrun build";
@@ -83,6 +98,10 @@
               cpra = "srcrun cp -f /mnt/gravytrain/build/latest/src/rust-project.json . && pkill rust-analyzer";
               tn = "srcrun triage/triageninja";
               renumber = "~/src/infrastructure/hg/tools/hg_renumber_patches.py";
+              claude-yolo = "claude --dangerously-skip-permissions";
+              claude = "claude --permission-mode auto";
+
+              flake-update = "nix flake update --flake ~/.config/home-manager && home-manager switch --flake ~/.config/home-manager";
             };
 
             initExtra = ''
@@ -139,6 +158,50 @@
                 ( cd "''${SRC_DIR}" && command "$@" )
               }
 
+              # Show which files each pending submission modifies
+              # Optional arg: partial filename to filter by
+              hg-pending-files () {
+                (
+                  cd "''${SRC_DIR}" || return 1
+                  local filter="$1"
+                  hg pending --patches 2>/dev/null | awk -v filter="$filter" '
+                    /^Submission [0-9]+ has/ {
+                      if (sub_id != "" && file_count > 0) {
+                        printf "\033[1;33m%s\033[0m\t%s\n", sub_id, user
+                        for (i = 1; i <= file_count; i++) print "  " files[i]
+                        print ""
+                      }
+                      sub_id = $2; user = ""; delete files; file_count = 0; seen_file_reset = 1
+                      delete seen
+                      next
+                    }
+                    /^# User / && user == "" {
+                      user = substr($0, 8)
+                      next
+                    }
+                    /^diff --git / {
+                      match($0, /^diff --git a\/(.*) b\/(.*)$/, m)
+                      a = m[1]; b = m[2]
+                      if (filter != "") {
+                        if (tolower(a) !~ tolower(filter) && tolower(b) !~ tolower(filter)) next
+                      }
+                      if (a == b) {
+                        if (!seen[a]++) files[++file_count] = a
+                      } else {
+                        if (!seen[b]++) files[++file_count] = a " -> " b
+                      }
+                    }
+                    END {
+                      if (sub_id != "" && file_count > 0) {
+                        printf "\033[1;33m%s\033[0m\t%s\n", sub_id, user
+                        for (i = 1; i <= file_count; i++) print "  " files[i]
+                        print ""
+                      }
+                    }
+                  '
+                )
+              }
+
               # fold helper for hg patch queues
               fold () {
                 local next_patch
@@ -165,6 +228,12 @@
               set -g update-environment "SSH_AUTH_SOCK SSH_CONNECTION DISPLAY"
               bind-key -T copy-mode-vi WheelUpPane send-keys -X scroll-up
               bind-key -T copy-mode-vi WheelDownPane send-keys -X scroll-down
+
+              # Open new window with Claude (prefix + a)
+              bind-key a new-window -n claude -c '#{HOME}/src' 'claude'
+
+              # Prefix key indicator in status bar
+              set -g status-right "#{?client_prefix,#[bg=red#,fg=white] ^A #[default] ,}#[default]%a %d %b %H:%M"
             '';
           };
         }];

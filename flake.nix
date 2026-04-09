@@ -36,10 +36,6 @@
           programs.claude-code = {
             enable = true;
             package = pkgs.claude-code;
-            settings = {
-              model = "opus[1m]";
-              effortLevel = "high";
-            };
             mcpServers = {
               nixos = {
                 type = "stdio";
@@ -62,7 +58,6 @@
             historyControl = [ "ignoreboth" ];
             historySize = 1000;
             historyFileSize = 2000;
-
             shellOptions = [
               "histappend"
               "checkwinsize"
@@ -98,6 +93,7 @@
               cpra = "srcrun cp -f /mnt/gravytrain/build/latest/src/rust-project.json . && pkill rust-analyzer";
               tn = "srcrun triage/triageninja";
               renumber = "~/src/infrastructure/hg/tools/hg_renumber_patches.py";
+              enzo = "source ~/src/tools/qston/enzo/enzo.bash";
               claude-yolo = "claude --dangerously-skip-permissions";
               claude = "claude --permission-mode auto";
 
@@ -105,6 +101,8 @@
             };
 
             initExtra = ''
+              export CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING=1
+
               # Auto-attach to tmux on SSH login
               if [ -n "$SSH_CONNECTION" ] && [ -z "$TMUX" ]; then
                 tmux new-session -A -s main
